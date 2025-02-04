@@ -13,7 +13,7 @@ const videoSchema = new Schema(
         },
         tile: {
             type: String,
-            required: ture
+            required: true
         },
         description: {
             type: String,
@@ -44,4 +44,4 @@ const videoSchema = new Schema(
 
 videoSchema.plugin(mongooseAggregatePaginate)
 
-export const VideoModel = mongoose.model("Video", videoSchema)
+export const Video = mongoose.model("Video", videoSchema)

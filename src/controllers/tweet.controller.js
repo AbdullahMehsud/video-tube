@@ -59,15 +59,21 @@ const updateTweet = asyncHandler( async(req, res) => {
         throw new ApiError(401, "Content cannot be empty")
     }
 
-    const tweet = await Tweet.findOneAndUpdate(
-        { _id: tweetId, owner: req.user?._id },
-        { $set: { content: content } },
-        { new: true }
-        )
-        if(!tweet){
-            throw new ApiError(402, "Tweet not found or not authorized to update")
-        }
-    return res.status(200).json(new apiResponse(201, tweet, "Tweet updated successfully"))
+    try {
+        const tweet = await Tweet.findOneAndUpdate(
+            { _id: tweetId, owner: req.user?._id },
+            { $set: { content: content } },
+            { new: true }
+            )
+            if(!tweet){
+                throw new ApiError(402, "Tweet not found or not authorized to update")
+            }
+        return res.status(200).json(new apiResponse(201, tweet, "Tweet updated successfully"))
+    } catch (error) {
+        console.log("error while updating tweet",error);
+        
+        throw new ApiError(500, "Someting went wrong while updating tweet")
+    }
 
      
 })
