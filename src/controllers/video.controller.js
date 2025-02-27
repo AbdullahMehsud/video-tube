@@ -118,7 +118,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
       thumbnailPublicId: videoThumbnail.public_id,
       owner: userId,
     });
-
+    console.log('hello there');
+    
     return res
       .status(201)
       .json(new apiResponse(200, video, "Video uploaded succssfully"));
