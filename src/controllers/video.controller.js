@@ -37,9 +37,23 @@ const getAllVideos = asyncHandler(async (req, res) => {
       },
       {
         $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField:"_id",
+          as:"userDetails"
+        }
+      },
+      {
+        $unwind: {
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
           from: "videos",
           localField: "owner",
-          foreignField: "_id",
+          foreignField: "owner",
           as: "userAllVideos"
         }
       },
@@ -60,8 +74,15 @@ const getAllVideos = asyncHandler(async (req, res) => {
           videoFile: 1,
           thumbnail: 1,
           duration: 1,
-          "userAllVideos.username": 1,
-          "userAllVideos.avatar": 1
+          "userDetails.username": 1,
+          "userDetails.avatar": 1,
+
+          // if want with every video user other video
+
+          // "userAllVideos._id": 1,
+          // "userAllVideos.title": 1,
+          // "userAllVideos.thumbnail": 1,
+          // "userAllVideos.videoFile": 1,
         }
       }
     ]);
@@ -83,6 +104,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
   const videoLocalPath = req.files?.videoFile?.[0]?.path;
   const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
 
+  
   if (!videoLocalPath) {
     throw new ApiError(400, "Video file is missing");
   }
