@@ -39,6 +39,7 @@ router.route("/publish-video").post(verifyJwt,
         }
     ]) ,updateVideo)
     router.route("/:userId/all-videos").get(verifyJwt, getAllVideos)
+    router.route("/:videoId/video-status").patch(verifyJwt, togglePublishStatus)
 
 
 

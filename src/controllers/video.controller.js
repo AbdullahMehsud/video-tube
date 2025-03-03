@@ -295,20 +295,26 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
-
+  
   if (!videoId) {
     throw new ApiError(401, "Video id is required");
   }
   try {
-    const video = Video.findOne({ _id: videoId, owner: req.user?._id });
+    
+    const video = await Video.findOne({ _id: videoId, owner: req.user?._id });
+    console.log("recive video id: ", video);
+    console.log("recive user id: ", req.user?._id);
+    
     if (!video) {
       throw new ApiError(404, "Video not found");
     }
+    const newStatus = !video.isPublished;
     const toggleStatus = await Video.findOneAndUpdate(
       { _id: videoId, owner: req.user?._id },
-      { $set: { isPublished: !Video.isPublished } },
+      { $set: { isPublished: newStatus } },
       { new: true }
     );
+
     if (!toggleStatus) {
       throw new ApiError(404, "Unable to toggle video status");
     }
@@ -319,7 +325,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
         new apiResponse(
           200,
           toggleStatus,
-          `video ${toggleStatus ? "Published" : "Unpublished"} successfully`
+          `video ${toggleStatus.isPublished ? "Published" : "Unpublished"} successfully`
         )
       );
   } catch (error) {
