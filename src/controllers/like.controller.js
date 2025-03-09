@@ -5,6 +5,8 @@ import { apiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.models.js";
 import { Tweet } from "../models/tweet.models.js";
+import { Comment } from "../models/comment.models.js";
+import { User } from "../models/user.models.js";
 
 
 const toggleVideoLike = asyncHandler(async(req, res) => {
@@ -44,8 +46,39 @@ const toggleVideoLike = asyncHandler(async(req, res) => {
 })
 
 const toggleCommentLike = asyncHandler( async(req, res) => {
-    const {commentId} = req.params
     // TODO: toggle like on comment
+    const {commentId} = req.params
+    const userId = req.user?._id
+    if(!commentId) {
+        throw new ApiError(400, "Comment not found")
+    }
+
+    try {
+        if(!mongoose.Types.ObjectId.isValid(commentId)){
+            throw new ApiError(400, "Invalid comment ID format")
+        }
+
+        const comment = Comment.findById(commentId)
+
+        if(!comment) {
+            throw new ApiError(402, "comment not found")
+        }
+        const existingLike = await like.findOne({comment: commentId, likedBy: userId})
+
+        if(existingLike){
+            await like.findByIdAndDelete(existingLike._id)
+            return res.status(200).json(new apiResponse(201, "Comment unlike successfully"))
+        } else {
+            const newLike = await like.create({comment: commentId, likedBy: userId})
+            return res.status(200).json( new apiResponse(201, newLike, "Comment liked successfully"))
+
+        }
+    } catch (error) {
+        console.log("Error toggling like", error);
+        throw new ApiError(500, "some thing went wrong while toggling comment like")
+    }
+
+
 })
 
 const toggletweetLike = asyncHandler( async(req, res) => {
@@ -85,7 +118,61 @@ const toggletweetLike = asyncHandler( async(req, res) => {
 })
 
 const getLikedVideos = asyncHandler( async(req, res) => {
+    const {page = 1, limit = 10} = req.query
     //TODO: get all liked videos
+    const userId = req.user?._id
+    
+    if(!mongoose.Types.ObjectId.isValid(userId)){
+        throw new ApiError(400, "Invalid user id")
+    }
+    try {
+        const likedVideos = await like.aggregate([
+            {
+                $match: { likedBy: new mongoose.Types.ObjectId(userId) },
+            },
+
+            {
+                $lookup: {
+                    from: "videos",
+                    localField: "video",
+                    foreignField: "_id",
+                    as: "likedVideos"
+                }
+            },
+
+            {
+                $unwind: "$likedVideos"
+            },
+
+            {
+                $project: {
+                    _id: 0,
+                    videoId: "$likedVideos._id",
+                    title: "$likedVideos.title",
+                    description: "$likedVideos.description",
+                    video:"$likedVideos.videoFile",
+                    thumbnail: "$likedVideos.thumbnail",
+                    createdAt: "$likedVideos.createdAt",
+                }
+            },
+
+            {
+                $skip: (page - 1) * limit
+            },
+            {
+                $limit: parseInt(limit)
+            }
+        ])
+        
+        if(!likedVideos.length){
+            return res.status(200).json( new apiResponse(201, [], "No liked videos"))
+        }
+
+        return res.status(200).json( new apiResponse(201, likedVideos, "Liked videos Fetched successfully"))
+    } catch (error) {
+        console.log("error while fetching liked videos");
+        throw new ApiError(500, "something went wrong while fetching liked videos")
+    }
 })
 
 
