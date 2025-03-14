@@ -104,7 +104,7 @@ const addVideoToPlaylist = asyncHandler( async(req, res) => {
 
 })
 
-const removeVideoToPlaylist = asyncHandler( async( req, res) => {
+const removeVideoFromPlaylist = asyncHandler( async( req, res) => {
     const {playlistId,videoId} = req.params
 
     if(!mongoose.Types.ObjectId.isValid(videoId)){
@@ -134,11 +134,48 @@ const removeVideoToPlaylist = asyncHandler( async( req, res) => {
 
 const deletePlaylist = asyncHandler( async( req, res) => {
     const {playlistId} = req.params
+    if(!playlistId){
+        throw new ApiError(400, "Invalid Playlist id")
+    }
+
+    try {
+        const playlist = await PlaylistModel.findByIdAndDelete(playlistId)
+        if(!playlist){
+            throw new ApiError(400, "some thing went wrong while deleting playlist")
+
+        }
+        return res.status(200).json( new apiResponse(200, playlist, "Playlist deleted successfully"))
+    } catch (error) {
+        console.log("error while deleting playlist", error);
+        
+        throw new ApiError(400, "some thing went wrong while deleting playlist")
+    }
 })
 
 const updatePlaylist = asyncHandler( async( req, res) => {
     const {playlistId} = req.params
     const {name, description} = req.body
+    if(!mongoose.Types.ObjectId.isValid(playlistId)){
+        throw new ApiError(400, "Invalid playlist ID")
+    }
+    if(!name && !description){
+        throw new ApiError(400, "atleast one field is required")
+    }
+
+    try {
+        const playlist = await PlaylistModel.findByIdAndUpdate(
+            playlistId,
+            {name, description},
+            {new: true}
+        )
+        if(!playlist){
+            throw new ApiError(400, "Could not update playlist")
+        }
+        res.status(200).json( new apiResponse(200, playlist, "Playlist updated successfully"))
+    } catch (error) {
+        console.log("error while updating playlist", error);
+        throw new ApiError(400, "some thing went wrong while updating playlist")
+    }
 })
 
 export {
@@ -146,7 +183,7 @@ export {
     getUserPlaylists,
     getPlaylistById,
     addVideoToPlaylist,
-    removeVideoToPlaylist,
+    removeVideoFromPlaylist,
     deletePlaylist,
     updatePlaylist
 }
