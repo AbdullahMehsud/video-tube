@@ -36,12 +36,13 @@ const registerUser = asyncHandler( async(req, res) => {
     if(existedUser){
         throw new ApiError(409, "User with email or username already exists")
     }
-    const avatarLocalPath = req.files?.avatar?.[0]?.path
-    const coverLocalPath = req.files?.coverImage?.[0]?.path
+    const avatarLocalPath = req.files?.avatar?.[0]?.path || null // todo
+    const coverLocalPath = req.files?.coverImage?.[0]?.path || null // todo
 
-    if(!avatarLocalPath){
-        throw new ApiError(400, "Avatar file is missing")
-    }
+    // todo
+    // if(!avatarLocalPath){
+    //     throw new ApiError(400, "Avatar file is missing")
+    // }
 
     // const avatar = await uploadOnCloudinary(avatarLocalPath)
     // let coverImage = ""
@@ -68,7 +69,7 @@ const registerUser = asyncHandler( async(req, res) => {
     try {
         const user = await User.create({
             fullname,
-            avatar: avatar.url,
+            avatar: avatar?.url || "", //todo
             coverImage: coverImage?.url || "",
             email,
             password,
@@ -98,14 +99,14 @@ const registerUser = asyncHandler( async(req, res) => {
 
 const loginUser = asyncHandler( async(req, res) => {
     // get data from body
-    const {email, username, password} = req.body
+    const {identifier, password} = req.body // identifier = email or username
 
-    if(!username && !email) {
-            throw new ApiError(500, "username or email is required")
+    if(!identifier || !password) {
+            throw new ApiError(500, "username or email and password is required")
     }
 
     const user = await User.findOne({
-        $or: [{username}, {email}]
+        $or: [{username: identifier}, {email: identifier}]
     })
 
     if(!user){
@@ -129,7 +130,7 @@ const loginUser = asyncHandler( async(req, res) => {
 
     const option = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: process.env.NODE_ENV = "production",
     }
 
     return res
@@ -235,18 +236,19 @@ const getCurrentUser = asyncHandler( async(req, res) => {
 })
 
 const updateAccountDetails = asyncHandler( async( req, res) => {
-    const {fullname, email} = req.body
+    const {username, email, fullname} = req.body
 
-    if(!fullname || !email) {
-        throw new ApiError(400, "Fullname and email are required")
+    if(!fullname || !email || !username) {
+        throw new ApiError(400, "Fullname, email and username are required")
     }
 
    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
-                fullname,
-                email: email
+                username: username,
+                fullname: fullname,
+                email: email,
             }
         },
         {new: true}
