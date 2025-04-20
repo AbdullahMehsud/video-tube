@@ -11,18 +11,24 @@ import {
 import mongoose from "mongoose";
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, query, sortBy = "createdAt", sortType = "desc", userId } = req.query;
+  const { page = 1, limit = 10, query, sortBy = "createdAt", sortType = "desc" } = req.query;
 
-  const matchStage = {};
+  const {username} = req.params
+  if(!username){
+    throw new ApiError(404, "Username is required")
+  }
+
+  const user = await User.findOne({username})
+  if(!user){
+    throw new ApiError("user not found")
+  }
+  const matchStage = {owner: user._id};
+
   if (query) {
     matchStage.$or = [
       { title: { $regex: query, $options: 'i' } },
       { description: { $regex: query, $options: 'i' } },
     ];
-  }
-
-  if (userId) {
-    matchStage.owner = new mongoose.Types.ObjectId(userId);
   }
 
   const sortOptions = {};
@@ -76,6 +82,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
           duration: 1,
           "userDetails.username": 1,
           "userDetails.avatar": 1,
+          createdAt: 1,
+          videoPublicId:1
 
           // if want with every video user other video
 
@@ -128,7 +136,9 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
   try {
     const userId = req.user._id;
-    console.log(userId);
+    const username = req.user.username;
+    console.log("userId",userId);
+    console.log("username: ",username);
 
     const video = await Video.create({
       title,
@@ -139,6 +149,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
       videoPublicId: videoPath.public_id,
       thumbnailPublicId: videoThumbnail.public_id,
       owner: userId,
+      ownerName: username,
     });
     
     return res
@@ -334,6 +345,23 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   }
 });
 
+const getAllUsersVideos = asyncHandler(async(req, res) => {
+ try {
+    const videos = await Video.find().populate("owner", "username avatar")
+    console.log("here");
+    
+    if(!videos){
+      throw new ApiError(400, "Videos not found")
+    }
+    res.status(200).json(new apiResponse(201, videos, "Videos fetched successfully"))
+ } catch (error) {
+  console.log("something went wrong while fetching videos");
+  throw new ApiError(500, "something went wrong while fetching videos")
+ }
+
+
+})
+
 export {
   getAllVideos,
   publishAVideo,
@@ -341,4 +369,5 @@ export {
   updateVideo,
   deleteVideo,
   togglePublishStatus,
+  getAllUsersVideos
 };

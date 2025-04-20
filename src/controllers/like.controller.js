@@ -81,6 +81,57 @@ const toggleCommentLike = asyncHandler( async(req, res) => {
 
 })
 
+const getCommentLikes = asyncHandler( async(req, res) => {
+    const {commentId} = req.params
+    const userId = req.user._id
+    if(!commentId){
+        throw new ApiError(400, "comment not found")
+    }
+    if(!userId) {
+        throw new ApiError(400, "user not found")
+    }
+    try {
+        if(!mongoose.Types.ObjectId.isValid(commentId)){
+            throw new ApiError(400, "Invalid comment ID")
+        }
+        const totalCommentLikes = await like.countDocuments({comment: commentId})
+        const userCommentLike = await like.findOne({comment: commentId, likedBy: userId})
+        const isCommentLiked = !!userCommentLike 
+        
+        return res.status(200).json(new apiResponse(201, { totalCommentLikes, isCommentLiked},"comment likes fetched successfully"))
+    } catch (error) {
+        console.log('some thing went wrong while fetching comments');
+        throw new ApiError(500, "Something went while fetching comments like")
+    }
+ })
+
+ const getVideoLikes = asyncHandler( async(req, res) => {
+    const {videoId} = req.params
+    const userId = req.user._id
+
+    if(!videoId) {
+        throw new ApiError(400, "video not found")
+    }
+    if(!userId) {
+        throw new ApiError(400, "user not found")
+    }
+    try {
+        if(!mongoose.Types.ObjectId.isValid(videoId)){
+            throw new ApiError(400, "Invalid video ID")
+        }
+        const totalVideoLikes = await like.countDocuments({video: videoId})
+        const userLike = await like.findOne({video:videoId, likedBy: userId})
+        console.log("userLike: ", userLike);
+        
+        const isLikedByUser = !!userLike
+        console.log("isLikedByUser: ", isLikedByUser);
+        
+        return res.status(200).json(new apiResponse(201, { totalVideoLikes, isLikedByUser},"Video likes fetched successfully"))
+    } catch (error) {
+        
+    }
+ })
+
 const toggletweetLike = asyncHandler( async(req, res) => {
     const {tweetId} = req.params
     // TODO: toggle like on tweet
@@ -176,9 +227,13 @@ const getLikedVideos = asyncHandler( async(req, res) => {
 })
 
 
+
+
 export {
     toggleVideoLike,
     toggleCommentLike,
     toggletweetLike,
-    getLikedVideos
+    getLikedVideos,
+    getCommentLikes,
+    getVideoLikes
 }
