@@ -50,8 +50,8 @@ const getUserChannelSubscribers = asyncHandler( async(req, res) => {
                 "username fullname email avatar "
             )
 
-            if(!subscribers.length){
-                return res.status(200).json( new apiResponse(201, "No subscriber found"))
+            if(subscribers.length === 0){
+                return res.status(200).json( new apiResponse(201,subscribers, "No subscriber found"))
             }
             return res.status(200).json( new apiResponse(201, subscribers, "Subscriber found successfully"))
         } catch (error) {

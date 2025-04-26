@@ -18,6 +18,7 @@ const createTweet = asyncHandler( async(req, res) => {
             content,
             owner: userId
         })
+        
 
         return res.status(201).json(new apiResponse(200, tweet, "Tweet posted succssfully"))
     } catch (error) {
@@ -32,23 +33,29 @@ const getUserTweet = asyncHandler( async(req, res) => {
         throw new ApiError(400, "Username is required")
     }    
 
-    const user = await User.findOne({
-        username: username?.toLowerCase()
-    })
-
-    if(!user){
-        throw new ApiError(401, "User not found")
+    try {
+        const user = await User.findOne({
+            username: username?.toLowerCase()
+        })
+    
+        if(!user){
+            throw new ApiError(401, "User not found")
+        }
+        const tweets = await Tweet.find({
+            owner: user._id
+    
+        }).populate("owner", "username fullname avatar").sort({createdAt: -1})
+    
+        if(!tweets){
+            throw new ApiError(404, tweets, "No tweets found of this user")
+        }
+    
+        return res.status(200).json(new apiResponse(201, tweets, "Tweets fetch successfully"))
+    } catch (error) {
+        console.log("error while fetching user tweets", error);
+        throw new ApiError(500, "Someting went wrong while fetching user tweets")
+        
     }
-    const tweets = await Tweet.find({
-        owner: user._id
-
-    }).populate("owner", "username fullname").sort({createdAt: -1})
-
-    if(!tweets?.length){
-        throw new ApiError(404, "No tweets found of this user")
-    }
-
-    return res.status(200).json(new apiResponse(201, tweets, "Tweets fetch successfully"))
 })
 
 const updateTweet = asyncHandler( async(req, res) => {

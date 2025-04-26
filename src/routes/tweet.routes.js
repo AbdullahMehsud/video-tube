@@ -6,7 +6,7 @@ const router = Router()
 
 router.route("/create").post(verifyJwt ,createTweet)
 router.route("/:username").get(verifyJwt, getUserTweet)
-router.route("/:id/update-tweet").patch(verifyJwt, updateTweet)
-router.route("/:id/delete-tweet").delete(verifyJwt, deleteTweet)
+router.route("/:tweetId/update-tweet").patch(verifyJwt, updateTweet)
+router.route("/:tweetId/delete-tweet").delete(verifyJwt, deleteTweet)
 
 export default router

@@ -121,11 +121,7 @@ const getCommentLikes = asyncHandler( async(req, res) => {
         }
         const totalVideoLikes = await like.countDocuments({video: videoId})
         const userLike = await like.findOne({video:videoId, likedBy: userId})
-        console.log("userLike: ", userLike);
-        
         const isLikedByUser = !!userLike
-        console.log("isLikedByUser: ", isLikedByUser);
-        
         return res.status(200).json(new apiResponse(201, { totalVideoLikes, isLikedByUser},"Video likes fetched successfully"))
     } catch (error) {
         
@@ -167,6 +163,32 @@ const toggletweetLike = asyncHandler( async(req, res) => {
 
 
 })
+
+const getTweetLikes = asyncHandler( async(req, res) => {
+    const {tweetId} = req.params
+    const userId = req.user._id
+
+    if(!tweetId) {
+        throw new ApiError(400, "tweet not found")
+    }
+    if(!userId) {
+        throw new ApiError(400, "user not found")
+    }
+    try {
+        if(!mongoose.Types.ObjectId.isValid(tweetId)){
+            throw new ApiError(400, "Invalid tweet ID")
+        }
+        const totalTweetLikes = await like.countDocuments({tweets: tweetId})
+        const userLike = await like.findOne({tweets:tweetId, likedBy: userId})
+        const isLikedByUser = !!userLike
+        return res.status(200).json(new apiResponse(201, { totalTweetLikes, isLikedByUser},"Tweet likes fetched successfully"))
+    } catch (error) {
+        console.log('some thing went wrong while fetching tweet likes');
+        
+        throw new ApiError(500, "Something went while fetching tweet likes")
+    }
+ })
+
 
 const getLikedVideos = asyncHandler( async(req, res) => {
     const {page = 1, limit = 10} = req.query
@@ -235,5 +257,6 @@ export {
     toggletweetLike,
     getLikedVideos,
     getCommentLikes,
-    getVideoLikes
+    getVideoLikes,
+    getTweetLikes
 }
