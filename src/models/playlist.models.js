@@ -17,6 +17,10 @@ const playlistSchema = new Schema({
     owner: {
         type: Schema.Types.ObjectId,
         ref: "User"
+    },
+    thumbnail: {
+        type: String,
+        required: true
     }
 },
 {

@@ -61,7 +61,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
         // Fetch videos uploaded by the channel
         const videos = await Video.find({ owner: objectIdChannelId })
             .sort({ createdAt: -1 }) // Newest videos first
-            .select("_id title thumbnail views createdAt");
+            .select("_id title thumbnail  views createdAt");
 
         // Extract video IDs to get likes & comments count
         const videoIds = videos.map(video => video._id);

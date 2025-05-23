@@ -3,20 +3,28 @@ import { ApiError } from "../utils/ApiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { PlaylistModel } from "../models/playlist.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const createPlaylist = asyncHandler( async(req, res) => {
     const {name, description} = req.body
+    const thumbnailLocalPath = req.file?.path
+    console.log(thumbnailLocalPath);
+    
     //TODO: create playlist
     if([name, description].some((field) => field?.trim() === "")){
         throw new ApiError(400, "All fields are required")
     }   
-
+    if(!thumbnailLocalPath){
+        throw new ApiError(400, "Thumbnail is required")
+    }
     const userId = req.user?._id
-    
+    let thumbnail;
     try {
+         thumbnail = await uploadOnCloudinary(thumbnailLocalPath)
         const playlist = await PlaylistModel.create({
             name,
             description,
+            thumbnail: thumbnail?.url || "",
             owner: userId
         })
         if(!playlist){
@@ -25,6 +33,10 @@ const createPlaylist = asyncHandler( async(req, res) => {
 
         return res.status(200).json(new apiResponse(201, playlist, "Playlist created successfully"))
     } catch (error) {
+        if(thumbnail){
+            await deleteFromCloudinary(thumbnail?.public_id)
+            console.log('thumbnail deleted from cloudinary');
+        }
         console.log("error while creating playlist");
         throw new ApiError(500, "Some thing went wrong while creating a playlist")
     }
@@ -43,7 +55,7 @@ const getUserPlaylists = asyncHandler( async(req, res) =>{
             $match: {owner: new mongoose.Types.ObjectId(userId)},
             },
             { 
-                $project: {name: 1, description: 1, videos: 1, createdAt: 1}
+                $project: {name: 1, description: 1, thumbnail: 1,  videoCount:{ $size: '$videos' }, videos: 1, createdAt: 1}
             }
     ])
 
@@ -66,7 +78,7 @@ const getPlaylistById = asyncHandler( async( req, res) => {
     }
 
     try {
-        const playlist = await PlaylistModel.find({_id:playlistId})
+        const playlist = await PlaylistModel.find({_id:playlistId}).populate("videos")
         if(!playlist){
             throw new ApiError(401, "some thing went wrong while fetching playlist")
         }
@@ -76,6 +88,7 @@ const getPlaylistById = asyncHandler( async( req, res) => {
         throw new ApiError(401, "some thing went wrong while fetching playlist")
     }
 })
+
 
 const addVideoToPlaylist = asyncHandler( async(req, res) => {
     const {playlistId, videoId} = req.params

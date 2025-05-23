@@ -9,10 +9,11 @@ import {
     updatePlaylist
  } from "../controllers/playlist.controller.js"
  import { verifyJwt } from "../middlewares/auth.middlewares.js"
+import { upload } from "../middlewares/multer.middlewares.js"
 
  const router = Router()
 
- router.route("/create-playlist").post(verifyJwt, createPlaylist)
+ router.route("/create-playlist").post(verifyJwt, upload.single('thumbnail'), createPlaylist)
  router.route("/:userId/get-user-playlists").get(verifyJwt, getUserPlaylists)
  router.route("/:playlistId/get-playlist").get(verifyJwt, getPlaylistById)
  router.route("/:playlistId/playlist/:videoId/add-video").put(verifyJwt, addVideoToPlaylist)
