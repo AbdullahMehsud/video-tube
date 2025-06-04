@@ -345,22 +345,66 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
   }
 });
 
-const getAllUsersVideos = asyncHandler(async(req, res) => {
- try {
-    const videos = await Video.find().populate("owner", "username avatar")
-    console.log("here");
+// const getAllUsersVideos = asyncHandler(async(req, res) => {
+//  try {
+//     const videos = await Video.find().populate("owner", "username avatar")
+//     console.log("here");
     
-    if(!videos){
-      throw new ApiError(400, "Videos not found")
+//     if(!videos){
+//       throw new ApiError(400, "Videos not found")
+//     }
+//     res.status(200).json(new apiResponse(201, videos, "Videos fetched successfully"))
+//  } catch (error) {
+//   console.log("something went wrong while fetching videos");
+//   throw new ApiError(500, "something went wrong while fetching videos")
+//  }
+
+// })
+
+// const getAllUsersVideos = asyncHandler(async(req, res) => {
+//     try {
+//       const videos = await Video.find({isPublished: true}).populate("owner")
+//       return res.status(200).json(new apiResponse(200, videos, "All users videos fetched successfully"))
+//     } catch (error) {
+//       console.log("something went wrong while fetching all users videos", error);
+//       throw new ApiError(500, "something went wrong while fetching all users videos")
+//     }
+// })
+
+const getAllUsersVideos = asyncHandler(async(req, res) => {
+  try {
+    const { search } = req.query;
+    
+    // Base query - always get published videos
+    let query = { isPublished: true };
+    
+    // Add search functionality if search term is provided
+    if (search && search.trim() !== '') {
+      query = {
+        ...query,
+        $or: [
+          { title: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { tags: { $in: [new RegExp(search, 'i')] } }
+        ]
+      };
     }
-    res.status(200).json(new apiResponse(201, videos, "Videos fetched successfully"))
- } catch (error) {
-  console.log("something went wrong while fetching videos");
-  throw new ApiError(500, "something went wrong while fetching videos")
- }
-
-
-})
+    
+    const videos = await Video.find(query)
+      .populate("owner", "username fullName avatar") // Only populate needed fields
+      .sort({ createdAt: -1 }); // Show newest first
+    
+    const message = search && search.trim() !== '' 
+      ? `Search results for "${search}" fetched successfully`
+      : "All users videos fetched successfully";
+    
+    return res.status(200).json(new apiResponse(200, videos, message));
+    
+  } catch (error) {
+    console.log("Error while fetching videos:", error);
+    throw new ApiError(500, "Something went wrong while fetching videos");
+  }
+});
 
 export {
   getAllVideos,
@@ -369,5 +413,5 @@ export {
   updateVideo,
   deleteVideo,
   togglePublishStatus,
-  getAllUsersVideos
+  getAllUsersVideos,
 };

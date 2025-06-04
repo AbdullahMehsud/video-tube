@@ -76,7 +76,6 @@ const getPlaylistById = asyncHandler( async( req, res) => {
     if(!mongoose.Types.ObjectId.isValid(playlistId)){
         throw new ApiError(400, "Playlist ID is required")
     }
-
     try {
         const playlist = await PlaylistModel.find({_id:playlistId}).populate("videos")
         if(!playlist){
